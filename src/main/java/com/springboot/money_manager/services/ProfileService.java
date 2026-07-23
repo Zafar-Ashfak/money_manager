@@ -15,14 +15,14 @@ public class ProfileService {
     private final ProfileRepository profileRepository;
 
     public ProfileDTO registerProfile(ProfileDTO profileDTO) {
-        Profile newProfile = toEntity(profileDTO);
+        Profile newProfile = toRequest(profileDTO);
         newProfile.setActivationToken(UUID.randomUUID().toString());
         newProfile = this.profileRepository.save(newProfile);
 
-        return toDTO(newProfile);
+        return toResponse(newProfile);
     }
 
-    public Profile toEntity(ProfileDTO profileDTO) {
+    public Profile toRequest(ProfileDTO profileDTO) {
         return Profile.builder()
                 .id(profileDTO.getId())
                 .fullName(profileDTO.getFullName())
@@ -34,7 +34,7 @@ public class ProfileService {
                 .build();
     }
 
-    public ProfileDTO toDTO(Profile profile) {
+    public ProfileDTO toResponse(Profile profile) {
         return ProfileDTO.builder()
                 .id(profile.getId())
                 .fullName(profile.getFullName())
