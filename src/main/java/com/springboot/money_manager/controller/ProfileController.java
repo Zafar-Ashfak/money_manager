@@ -23,8 +23,8 @@ public class ProfileController {
         }
     }
 
-    @GetMapping("/activate")
-    public ResponseEntity<?> activateProfile(@RequestParam String token) {
+    @GetMapping("/activate/")
+    public ResponseEntity<?> activateProfile(@RequestParam(name = "ACTIVATION_TOKEN") String token) {
         boolean isActivated = profileService.activateProfile(token);
         if (isActivated) {
             return ResponseEntity.ok("Profile activated successfully");
