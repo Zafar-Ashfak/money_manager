@@ -4,6 +4,10 @@ import com.springboot.money_manager.controller.Profile;
 import com.springboot.money_manager.dto.ProfileDTO;
 import com.springboot.money_manager.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -14,6 +18,7 @@ public class ProfileService {
 
     private final ProfileRepository profileRepository;
     private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
 
     public ProfileDTO registerProfile(ProfileDTO profileDTO) {
         Profile newProfile = toRequest(profileDTO);
@@ -31,7 +36,7 @@ public class ProfileService {
                 .id(profileDTO.getId())
                 .fullName(profileDTO.getFullName())
                 .email(profileDTO.getEmail())
-                .password(profileDTO.getPassword())
+                .password(passwordEncoder.encode(profileDTO.getPassword()))
                 .profileImageUrl(profileDTO.getProfileImageUrl())
                 .createdAt(profileDTO.getCreatedAt())
                 .updatedAt(profileDTO.getUpdatedAt())
@@ -57,6 +62,24 @@ public class ProfileService {
                     return true;
                 })
                 .orElse(false);
+    }
+
+    public boolean isAccountActive(String email) {
+        return profileRepository.findByEmail(email)
+                .map(Profile::getIsActive)
+                .orElse(false);
+    }
+
+    public Profile getCurrentProfile() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return profileRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new UsernameNotFoundException("Profile not found with email: " + authentication.getName()));
+    }
+
+    public ProfileDTO getPublicProfile(String email) {
+        if (email == null) {
+            getCurrentProfile();
+        }
     }
 }
 
