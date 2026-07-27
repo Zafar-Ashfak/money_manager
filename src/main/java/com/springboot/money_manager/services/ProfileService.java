@@ -1,15 +1,19 @@
 package com.springboot.money_manager.services;
 
 import com.springboot.money_manager.controller.Profile;
+import com.springboot.money_manager.dto.AuthDTO;
 import com.springboot.money_manager.dto.ProfileDTO;
 import com.springboot.money_manager.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -19,6 +23,7 @@ public class ProfileService {
     private final ProfileRepository profileRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
 
     public ProfileDTO registerProfile(ProfileDTO profileDTO) {
         Profile newProfile = toRequest(profileDTO);
@@ -77,8 +82,31 @@ public class ProfileService {
     }
 
     public ProfileDTO getPublicProfile(String email) {
+        Profile currentUser = null;
         if (email == null) {
-            getCurrentProfile();
+           currentUser = getCurrentProfile();
+        } else {
+            currentUser = profileRepository.findByEmail(email)
+                    .orElseThrow(() ->
+                            new UsernameNotFoundException("Profile not found with email: " + email));
+        }
+        return ProfileDTO.builder()
+                .id(currentUser.getId())
+                .fullName(currentUser.getFullName())
+                .email(currentUser.getEmail())
+                .profileImageUrl(currentUser.getProfileImageUrl())
+                .createdAt(currentUser.getCreatedAt())
+                .updatedAt(currentUser.getUpdatedAt())
+                .build();
+    }
+
+    public Map<String, Object> authenticateAndGenerateToken(AuthDTO authDTO) {
+        try {
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authDTO.getEmail(), authDTO.getPassword()));
+            return Map.of("token", "JWT token",
+                    "user", getPublicProfile(authDTO.getEmail()));
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid email or password");
         }
     }
 }
